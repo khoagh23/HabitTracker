@@ -20,7 +20,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             // -----------------------------
             
             // Đặt tiêu đề to đùng ở trên cùng
-            title = "Thói quen của tôi"
+            title = "Ghi chú của KĐ"
             navigationController?.navigationBar.prefersLargeTitles = true
             
             // Tạo nút (+) ở góc phải trên cùng
@@ -32,7 +32,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     // 3. Đổ dữ liệu (chữ) vào từng dòng một
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        // Gọi lại cái "HabitCell" mà ban nãy chúng ta vừa đặt tên
+        // Gọi lại cái "HabitCell" mà ban nãy vừa đặt tên
         let cell = tableView.dequeueReusableCell(withIdentifier: "HabitCell", for: indexPath)
         
         // Lấy tên thói quen và nhét vào ô
@@ -56,10 +56,10 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     // Hàm xử lý sự kiện khi người dùng bấm vào một dòng
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        // 1. Tìm cái dòng (cell) mà bạn vừa bấm vào
+        
         if let cell = tableView.cellForRow(at: indexPath) {
             
-            // 2. Kiểm tra: nếu có dấu tick rồi thì gỡ ra, nếu chưa có thì gắn vào
+            // Kiểm tra: nếu có dấu tick rồi thì gỡ ra, nếu chưa có thì gắn vào
             if cell.accessoryType == .checkmark {
                 cell.accessoryType = .none
             } else {
@@ -67,7 +67,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             }
         }
         
-        // 3. Tắt cái hiệu ứng nền xám xám khi vừa bấm xong cho nó đẹp
+        // Tắt cái hiệu ứng nền xám khi vừa bấm xong
         tableView.deselectRow(at: indexPath, animated: true)
     }
     // Hàm hiển thị Popup khi bấm nút (+)
@@ -80,10 +80,10 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             
             let saveAction = UIAlertAction(title: "Lưu", style: .default) { _ in
                 if let textField = alert.textFields?.first, let newHabit = textField.text, !newHabit.isEmpty {
-                    // Thêm vào mảng dữ liệu
+    // Thêm vào mảng dữ liệu
                     self.habits.append(newHabit)
-                    // Cập nhật lại giao diện
-                    // Tự động tìm cái bảng trên màn hình và yêu cầu nó vẽ lại dữ liệu
+    // Cập nhật lại giao diện
+    // Tự động tìm cái bảng trên màn hình và yêu cầu vẽ lại dữ liệu
         if let myTableView = self.view.subviews.first(where: { $0 is UITableView }) as? UITableView {
                                             myTableView.reloadData()
                                         }
