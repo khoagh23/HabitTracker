@@ -80,11 +80,11 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         
         alert.addTextField { $0.placeholder = "Tên việc (VD: Uống thuốc)" }
         alert.addTextField {
-            $0.placeholder = "Giờ (0-23, VD: 00)"
+            $0.placeholder = "Giờ (0-23, VD: 23)"
             $0.keyboardType = .numberPad
         }
         alert.addTextField {
-            $0.placeholder = "Phút (0-59, VD: 00)"
+            $0.placeholder = "Phút (0-59, VD: 04)"
             $0.keyboardType = .numberPad
         }
         
