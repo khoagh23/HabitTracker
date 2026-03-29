@@ -53,18 +53,11 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="AOu-gH-Ok7">
-                        <rightBarButtonItems>
-                            <barButtonItem systemItem="compose" id="9fN-em-roz">
-                                <connections>
-                                    <action selector="editButtonTapped:" destination="BYZ-38-t0r" id="Wtg-MV-PvP"/>
-                                </connections>
-                            </barButtonItem>
-                            <barButtonItem systemItem="add" id="Cmh-iZ-XWZ">
-                                <connections>
-                                    <action selector="addButtonTapped:" destination="BYZ-38-t0r" id="7Wq-77-ahR"/>
-                                </connections>
-                            </barButtonItem>
-                        </rightBarButtonItems>
+                        <barButtonItem key="rightBarButtonItem" systemItem="add" id="Cmh-iZ-XWZ">
+                            <connections>
+                                <action selector="addButtonTapped:" destination="BYZ-38-t0r" id="7Wq-77-ahR"/>
+                            </connections>
+                        </barButtonItem>
                     </navigationItem>
                     <connections>
                         <outlet property="myTableView" destination="b6K-WE-6tf" id="wr4-9J-aq9"/>
@@ -82,13 +75,6 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="WELCOME" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="F1H-J8-c2w">
-                                <rect key="frame" x="155" y="416" width="83" height="21"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                <nil key="textColor"/>
-                                <nil key="highlightedColor"/>
-                            </label>
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vWW-Qt-gRv">
                                 <rect key="frame" x="126" y="699" width="141" height="51"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -99,6 +85,13 @@
                                     <segue destination="MSN-o8-ggF" kind="presentation" id="5Oo-dg-7Js"/>
                                 </connections>
                             </button>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="WELCOME" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="F1H-J8-c2w">
+                                <rect key="frame" x="87" y="399" width="218" height="54"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="45"/>
+                                <color key="textColor" systemColor="linkColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="YTL-i3-vS5"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
@@ -128,6 +121,9 @@
         </scene>
     </scenes>
     <resources>
+        <systemColor name="linkColor">
+            <color red="0.0" green="0.47843137250000001" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>

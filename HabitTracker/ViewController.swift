@@ -8,6 +8,9 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     var emptyStateContainerView: UIView!
     var emptyStateImageView: UIImageView!
     var emptyStateLabel: UILabel!
+    var progressLabel: UILabel!
+    
+    var floatingResetButton: UIButton!
 
     var habits: [String] = [] {
         didSet { UserDefaults.standard.set(habits, forKey: "KhoThoiQuen") }
@@ -36,46 +39,71 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         if let trangThaiDaLuu = UserDefaults.standard.array(forKey: "TrangThaiTick") as? [Bool] { habitsCompleted = trangThaiDaLuu }
         if habitsCompleted.count != habits.count { habitsCompleted = Array(repeating: false, count: habits.count) }
         
+        setupHeaderView()
         checkEmptyState()
         
-        let savedTitle = UserDefaults.standard.string(forKey: "SavedNotesTitle") ?? "Lịch trình hôm nay"
-        self.navigationItem.title = savedTitle
+        self.navigationItem.title = "Lịch trình hôm nay"
         
         if myTableView != nil {
+            setupFloatingResetButton()
             UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in }
         }
     }
 
-    @IBAction func editButtonTapped(_ sender: UIBarButtonItem) {
-        self.emptyStateContainerView?.isHidden = true
-        let alert = UIAlertController(title: "Đổi tên danh sách", message: "Bạn muốn đổi tên thành gì?", preferredStyle: .alert)
-        alert.addTextField { textField in
-            textField.placeholder = "Ví dụ: Việc cần làm"
-            textField.text = self.navigationItem.title
-        }
-        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
-            let newTitle = alert.textFields?.first?.text ?? ""
-            if !newTitle.isEmpty {
-                self.navigationItem.title = newTitle
-                UserDefaults.standard.set(newTitle, forKey: "SavedNotesTitle")
-            }
+   
+    func setupFloatingResetButton() {
+        floatingResetButton = UIButton(type: .system)
+        floatingResetButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        floatingResetButton.backgroundColor = .systemRed
+        floatingResetButton.tintColor = .white
+        floatingResetButton.setTitle("Xóa hết", for: .normal)
+        floatingResetButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        
+        floatingResetButton.layer.cornerRadius = 22
+        floatingResetButton.layer.shadowColor = UIColor.black.cgColor
+        floatingResetButton.layer.shadowOpacity = 0.3
+        floatingResetButton.layer.shadowOffset = CGSize(width: 0, height: 4)
+        floatingResetButton.layer.shadowRadius = 5
+        
+        floatingResetButton.addTarget(self, action: #selector(handleResetTapped), for: .touchUpInside)
+        
+        self.view.addSubview(floatingResetButton)
+        
+        NSLayoutConstraint.activate([
+            floatingResetButton.trailingAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
+            floatingResetButton.bottomAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            floatingResetButton.widthAnchor.constraint(equalToConstant: 100),
+            floatingResetButton.heightAnchor.constraint(equalToConstant: 44)
+        ])
+    }
+    
+  
+    @objc func handleResetTapped() {
+        if habits.isEmpty { return }
+        
+        let alert = UIAlertController(title: "Xóa sạch dữ liệu! 🧹", message: "Bạn có chắc chắn muốn xóa toàn bộ lịch trình không? Hành động này không thể hoàn tác.", preferredStyle: .alert)
+        
+        alert.addAction(UIAlertAction(title: "Xóa tất cả", style: .destructive, handler: { _ in
+            self.habits.removeAll()
+            self.habitsCompleted.removeAll()
+            self.myTableView?.reloadData()
+            self.updateProgress()
             self.checkEmptyState()
+            self.triggerVisualFeedback()
         }))
-        alert.addAction(UIAlertAction(title: "Hủy", style: .cancel, handler: { _ in self.checkEmptyState() }))
+        
+        alert.addAction(UIAlertAction(title: "Hủy", style: .cancel, handler: nil))
         present(alert, animated: true)
     }
 
-    // 🚀 TÍNH NĂNG MỚI: BÁNH RĂNG THỜI GIAN (TIME PICKER)
     @IBAction func addButtonTapped(_ sender: UIBarButtonItem) {
         self.emptyStateContainerView?.isHidden = true
-        let alert = UIAlertController(title: "Thêm lịch trình", message: "Vuốt để chọn giờ nha", preferredStyle: .alert)
+        let alert = UIAlertController(title: "Thêm lịch trình", message: "Thiết lập thời gian cho công việc", preferredStyle: .alert)
         
-        // Ô 1: Nhập tên (Vẫn dùng bàn phím chữ bình thường)
-        alert.addTextField { $0.placeholder = "Tên việc (VD: Uống thuốc)" }
-        
-        // Ô 2: Khung chọn giờ (Biến hóa thành trục xoay)
+        alert.addTextField { $0.placeholder = "Tên công việc" }
         alert.addTextField { textField in
-            textField.placeholder = "Chạm để chọn giờ"
+            textField.placeholder = "Chọn thời gian"
             textField.tintColor = .clear
             
             let datePicker = UIDatePicker()
@@ -90,11 +118,10 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             datePicker.addAction(UIAction(handler: { _ in
                 textField.text = formatter.string(from: datePicker.date)
             }), for: .valueChanged)
-            
             textField.inputView = datePicker
         }
         
-        alert.addAction(UIAlertAction(title: "Lên lịch", style: .default, handler: { _ in
+        alert.addAction(UIAlertAction(title: "Thêm", style: .default, handler: { _ in
             let text = alert.textFields?[0].text ?? ""
             let timeStr = alert.textFields?[1].text ?? ""
             
@@ -102,7 +129,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                 self.habits.insert(text, at: 0)
                 self.habitsCompleted.insert(false, at: 0)
                 self.myTableView?.reloadData()
-                
+                self.updateProgress()
                 
                 var gio = 19
                 var phut = 0
@@ -111,7 +138,6 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                     gio = Int(timeParts[0]) ?? 19
                     phut = Int(timeParts[1]) ?? 0
                 }
-                
                 self.datLichTheoGio(gio: gio, phut: phut, tenThoiQuen: text)
             }
             self.checkEmptyState()
@@ -120,42 +146,48 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         present(alert, animated: true)
     }
 
-    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            habits.remove(at: indexPath.row)
-            habitsCompleted.remove(at: indexPath.row)
-            tableView.deleteRows(at: [indexPath], with: .fade)
+    
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let deleteAction = UIContextualAction(style: .destructive, title: "Xóa") { (action, view, completionHandler) in
+            self.habits.remove(at: indexPath.row)
+            self.habitsCompleted.remove(at: indexPath.row)
+            tableView.deleteRows(at: [indexPath], with: .left)
+            self.updateProgress()
             self.checkEmptyState()
+            completionHandler(true)
         }
+        deleteAction.image = UIImage(systemName: "trash.fill")
+        deleteAction.backgroundColor = .systemRed
+        return UISwipeActionsConfiguration(actions: [deleteAction])
     }
 
     @IBAction func startButtonTapped(_ sender: UIButton) { }
 
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return habits.count
-    }
-
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 75
-    }
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { return habits.count }
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat { return 75 }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "HabitCell", for: indexPath)
-        
         let habitName = habits[indexPath.row]
         let isCompleted = habitsCompleted[indexPath.row]
         
         cell.backgroundColor = .clear
         
         let cardView = UIView()
-        cardView.backgroundColor = .white
+        cardView.backgroundColor = isCompleted ? UIColor.systemGray6 : .white
         cardView.layer.cornerRadius = 12
         cardView.translatesAutoresizingMaskIntoConstraints = false
-        
         cardView.layer.shadowColor = UIColor.black.cgColor
-        cardView.layer.shadowOpacity = 0.08
-        cardView.layer.shadowOffset = CGSize(width: 0, height: 3)
-        cardView.layer.shadowRadius = 5
+        cardView.layer.shadowOpacity = isCompleted ? 0.0 : 0.05
+        cardView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        cardView.layer.shadowRadius = 4
+        
+        let colorStrip = UIView()
+        colorStrip.backgroundColor = isCompleted ? .systemGray4 : .systemBlue
+        colorStrip.layer.cornerRadius = 12
+        colorStrip.layer.maskedCorners = [.layerMinXMinYCorner, .layerMinXMaxYCorner]
+        colorStrip.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(colorStrip)
         
         let backView = UIView()
         backView.backgroundColor = .clear
@@ -165,7 +197,12 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             cardView.topAnchor.constraint(equalTo: backView.topAnchor, constant: 6),
             cardView.bottomAnchor.constraint(equalTo: backView.bottomAnchor, constant: -6),
             cardView.leadingAnchor.constraint(equalTo: backView.leadingAnchor, constant: 16),
-            cardView.trailingAnchor.constraint(equalTo: backView.trailingAnchor, constant: -16)
+            cardView.trailingAnchor.constraint(equalTo: backView.trailingAnchor, constant: -16),
+            
+            colorStrip.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            colorStrip.topAnchor.constraint(equalTo: cardView.topAnchor),
+            colorStrip.bottomAnchor.constraint(equalTo: cardView.bottomAnchor),
+            colorStrip.widthAnchor.constraint(equalToConstant: 6)
         ])
         cell.backgroundView = backView
         
@@ -173,79 +210,119 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             let attributeString: NSMutableAttributedString = NSMutableAttributedString(string: habitName)
             attributeString.addAttribute(NSAttributedString.Key.strikethroughStyle, value: 2, range: NSMakeRange(0, attributeString.length))
             cell.textLabel?.attributedText = attributeString
-            cell.textLabel?.textColor = .lightGray
+            cell.textLabel?.textColor = .systemGray
             cell.accessoryType = .checkmark
+            cell.tintColor = .systemBlue
         } else {
             cell.textLabel?.attributedText = nil
             cell.textLabel?.text = habitName
             cell.textLabel?.textColor = .black
             cell.accessoryType = .none
         }
-        
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         habitsCompleted[indexPath.row].toggle()
+        self.updateProgress()
+        
+        if let cell = tableView.cellForRow(at: indexPath) {
+            UIView.animate(withDuration: 0.1, animations: {
+                cell.transform = CGAffineTransform(scaleX: 0.93, y: 0.93)
+            }) { _ in
+                UIView.animate(withDuration: 0.35, delay: 0, usingSpringWithDamping: 0.4, initialSpringVelocity: 1.5, options: .curveEaseInOut, animations: {
+                    cell.transform = .identity
+                }, completion: nil)
+            }
+        }
+        
         tableView.deselectRow(at: indexPath, animated: true)
-        tableView.reloadRows(at: [indexPath], with: .automatic)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            tableView.reloadRows(at: [indexPath], with: .none)
+        }
         
         if habitsCompleted[indexPath.row] == true {
-            shootConfettiAndVibrate()
+            triggerVisualFeedback()
         }
     }
     
-    func shootConfettiAndVibrate() {
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-        
-        let emitter = CAEmitterLayer()
-        emitter.emitterPosition = CGPoint(x: self.view.bounds.width / 2.0, y: -50)
-        emitter.emitterShape = .line
-        emitter.emitterSize = CGSize(width: self.view.bounds.width, height: 1)
-        
-        let colors: [UIColor] = [.systemRed, .systemBlue, .systemGreen, .systemYellow, .systemPink, .systemPurple, .systemOrange]
-        var cells: [CAEmitterCell] = []
-        
-        for color in colors {
-            let cell = CAEmitterCell()
-            cell.birthRate = 6.0
-            cell.lifetime = 14.0
-            cell.velocity = 250
-            cell.velocityRange = 50
-            cell.emissionLongitude = .pi
-            cell.emissionRange = .pi / 4
-            cell.spin = 2
-            cell.spinRange = 2
-            cell.scaleRange = 0.5
-            cell.scaleSpeed = -0.05
+    func triggerVisualFeedback() {
+        let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+        if let window = windowScene?.windows.first(where: { $0.isKeyWindow }) {
+            let flashView = UIView(frame: window.bounds)
+            flashView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.20)
+            flashView.isUserInteractionEnabled = false
+            flashView.alpha = 0
+            window.addSubview(flashView)
             
-            let rect = CGRect(x: 0, y: 0, width: 12, height: 12)
-            UIGraphicsBeginImageContext(rect.size)
-            color.setFill()
-            UIBezierPath(rect: rect).fill()
-            let image = UIGraphicsGetImageFromCurrentImageContext()
-            UIGraphicsEndImageContext()
-            
-            cell.contents = image?.cgImage
-            cells.append(cell)
-        }
-        
-        emitter.emitterCells = cells
-        self.view.layer.addSublayer(emitter)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            emitter.birthRate = 0
-            DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) {
-                emitter.removeFromSuperlayer()
+            UIView.animate(withDuration: 0.1, animations: {
+                flashView.alpha = 1.0
+            }) { _ in
+                UIView.animate(withDuration: 0.4, delay: 0.05, options: .curveEaseOut, animations: {
+                    flashView.alpha = 0
+                }) { _ in
+                    flashView.removeFromSuperview()
+                }
             }
+        }
+    }
+
+    func setupHeaderView() {
+        guard myTableView != nil else { return }
+        
+        let headerView = UIView(frame: CGRect(x: 0, y: 0, width: self.view.bounds.width, height: 70))
+        
+        let dateLabel = UILabel()
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "vi_VN")
+        formatter.dateFormat = "EEEE, dd 'tháng' MM"
+        dateLabel.text = formatter.string(from: Date()).uppercased()
+        
+        dateLabel.font = UIFont.systemFont(ofSize: 12, weight: .bold)
+        dateLabel.textColor = .systemGray
+        dateLabel.translatesAutoresizingMaskIntoConstraints = false
+        headerView.addSubview(dateLabel)
+        
+        progressLabel = UILabel()
+        progressLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        progressLabel.textColor = .black
+        progressLabel.translatesAutoresizingMaskIntoConstraints = false
+        headerView.addSubview(progressLabel)
+        
+        NSLayoutConstraint.activate([
+            dateLabel.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 10),
+            dateLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 20),
+            
+            progressLabel.topAnchor.constraint(equalTo: dateLabel.bottomAnchor, constant: 4),
+            progressLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 20)
+        ])
+        
+        myTableView.tableHeaderView = headerView
+        updateProgress()
+    }
+    
+    func updateProgress() {
+        guard progressLabel != nil else { return }
+        let total = habits.count
+        let completed = habitsCompleted.filter { $0 == true }.count
+        let left = total - completed
+        
+        if total == 0 {
+            progressLabel.text = "Hãy thêm việc cho hôm nay"
+        } else if left == 0 {
+            progressLabel.text = "Hoàn hảo! Đã xong hết"
+            progressLabel.textColor = .systemBlue
+        } else {
+            progressLabel.text = "Còn \(left) việc đang chờ bạn"
+            progressLabel.textColor = .black
         }
     }
 
     func datLichTheoGio(gio: Int, phut: Int, tenThoiQuen: String) {
         let content = UNMutableNotificationContent()
-        content.title = "Đến giờ rồi bạn ơi!"
-        content.body = "Tới lúc: \(tenThoiQuen) rồi, nhanh nhanh nào!"
+        content.title = "Đến giờ rồi!"
+        content.body = "Tới giờ thực hiện: \(tenThoiQuen)."
         content.sound = UNNotificationSound.default
         var dateComponents = DateComponents()
         dateComponents.hour = gio
@@ -255,6 +332,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
     }
     
+    // VẪN GIỮ LẠI ICON SẢNH CHỜ CHO BỒ NÈ
     func setupEmptyStateUI() {
         emptyStateContainerView = UIView()
         emptyStateContainerView.translatesAutoresizingMaskIntoConstraints = false
@@ -262,15 +340,15 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         self.view.addSubview(emptyStateContainerView)
         
         emptyStateImageView = UIImageView()
-        emptyStateImageView.image = UIImage(systemName: "list.bullet.clipboard")
+        emptyStateImageView.image = UIImage(systemName: "tray")
         emptyStateImageView.contentMode = .scaleAspectFit
-        emptyStateImageView.tintColor = .systemGray4
+        emptyStateImageView.tintColor = .systemGray3
         emptyStateImageView.translatesAutoresizingMaskIntoConstraints = false
         emptyStateContainerView.addSubview(emptyStateImageView)
         
         emptyStateLabel = UILabel()
-        emptyStateLabel.text = "Lịch trình hôm nay đang trống.\nBấm dấu + để tạo mới nhé"
-        emptyStateLabel.font = UIFont.systemFont(ofSize: 17, weight: .regular)
+        emptyStateLabel.text = "Chưa có dữ liệu.\nNhấn dấu + để thêm lịch trình mới."
+        emptyStateLabel.font = UIFont.systemFont(ofSize: 16, weight: .regular)
         emptyStateLabel.textColor = .systemGray
         emptyStateLabel.textAlignment = .center
         emptyStateLabel.numberOfLines = 0
@@ -285,8 +363,8 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             
             emptyStateImageView.topAnchor.constraint(equalTo: emptyStateContainerView.topAnchor),
             emptyStateImageView.centerXAnchor.constraint(equalTo: emptyStateContainerView.centerXAnchor),
-            emptyStateImageView.widthAnchor.constraint(equalToConstant: 80),
-            emptyStateImageView.heightAnchor.constraint(equalToConstant: 80),
+            emptyStateImageView.widthAnchor.constraint(equalToConstant: 60),
+            emptyStateImageView.heightAnchor.constraint(equalToConstant: 60),
             
             emptyStateLabel.topAnchor.constraint(equalTo: emptyStateImageView.bottomAnchor, constant: 16),
             emptyStateLabel.leadingAnchor.constraint(equalTo: emptyStateContainerView.leadingAnchor),
